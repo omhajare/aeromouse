@@ -31,14 +31,16 @@ export function Hero({ onDiscoverClick }: HeroProps) {
           <p className="text-gray-400 text-sm leading-relaxed mb-6">
             Control your cursor with a gesture, navigate with your
             gaze, and authenticate with your unique air signature
-            — all in real time. No hardware. No touch. Just you..
+            — all in real time. No hardware. No touch. Just you.
           </p>
-          <button
-            onClick={onDiscoverClick}
-            className="bg-[#a855f7] hover:bg-[#9333ea] text-white px-6 py-3 rounded-sm text-sm font-medium transition-colors flex items-center gap-2"
-          >
-            Explore Platform &rarr;
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={onDiscoverClick}
+              className="bg-[#a855f7] hover:bg-[#9333ea] text-white px-6 py-3 rounded-sm text-sm font-medium transition-colors flex items-center gap-2"
+            >
+              Explore Platform &rarr;
+            </button>
+          </div>
         </div>
       </footer>
     </section>

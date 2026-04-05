@@ -7,6 +7,7 @@ import {
   cancelAuth,
   deleteUser,
   getAuthStatus,
+  setMode,
 } from '../../api';
 import type { User as UserType, AuthStatus } from '../../api';
 
@@ -17,13 +18,25 @@ interface LogEntry {
   message: string;
 }
 
-export function SignatureAuth() {
+interface SignatureAuthProps {
+  currentMode: number | null;
+}
+
+export function SignatureAuth({ currentMode }: SignatureAuthProps) {
   const [username, setUsername] = useState('');
   const [users, setUsers] = useState<UserType[]>([]);
   const [authLog, setAuthLog] = useState<LogEntry[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isActivating, setIsActivating] = useState(false);
   const [currentOperation, setCurrentOperation] = useState<'none' | 'enroll' | 'verify'>('none');
   const [pollingInterval, setPollingInterval] = useState<ReturnType<typeof setInterval> | null>(null);
+  
+  // Create a stable video URL so it doesn't reconnect on every React re-render
+  const [videoUrl] = useState(() => {
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    return `${baseUrl}/api/video_feed?t=${Date.now()}`;
+  });
+
   let logIdCounter = 0;
 
   const addLog = useCallback((type: LogEntry['type'], message: string) => {
@@ -151,6 +164,23 @@ export function SignatureAuth() {
     setCurrentOperation('none');
   };
 
+  const handleActivateAirSignature = async () => {
+    setIsActivating(true);
+    try {
+      if (currentMode === 3) {
+        await setMode(0);
+        addLog('info', 'Air Signature mode deactivated (Standby).');
+      } else {
+        await setMode(3);
+        addLog('success', 'Air Signature mode activated! Tracking starts immediately.');
+      }
+    } catch (err) {
+      addLog('error', err instanceof Error ? err.message : 'Failed to toggle mode');
+    } finally {
+      setIsActivating(false);
+    }
+  };
+
   const handleDeleteUser = async (uname: string) => {
     try {
       await deleteUser(uname);
@@ -167,8 +197,28 @@ export function SignatureAuth() {
 
         {/* Left Panel — Info */}
         <div className="bg-black/50 p-8 border-4 border-white shadow-[8px_8px_0_rgba(255,255,255,0.1)] flex flex-col gap-6">
-          <div className="w-16 h-16 bg-white flex items-center justify-center shadow-[4px_4px_0_#a855f7]">
-            <Lock className="w-8 h-8 text-black" />
+          <div className="flex justify-between items-start">
+            <div className="w-16 h-16 bg-white flex items-center justify-center shadow-[4px_4px_0_#a855f7]">
+              <Lock className="w-8 h-8 text-black" />
+            </div>
+
+            <button
+              onClick={handleActivateAirSignature}
+              disabled={isActivating}
+              className={`px-6 py-3 text-xs font-black uppercase tracking-widest border-[3px] border-white relative transition-all duration-200 shadow-[6px_6px_0_#fff] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[8px_8px_0_#fff] active:translate-y-1 active:translate-x-1 active:shadow-none disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none ${
+                currentMode === 3
+                  ? 'bg-red-600 text-white hover:bg-red-500 hover:border-red-500'
+                  : 'bg-black text-white hover:bg-[#a855f7] hover:border-[#a855f7]'
+              }`}
+            >
+              {isActivating ? (
+                currentMode === 3 ? 'Deactivating...' : 'Activating...'
+              ) : currentMode === 3 ? (
+                'Deactivate Air Signature'
+              ) : (
+                'Activate Air Signature'
+              )}
+            </button>
           </div>
 
           <h2 className="text-3xl font-black uppercase tracking-tight">Signature Authentication</h2>
@@ -176,6 +226,21 @@ export function SignatureAuth() {
           <p className="text-gray-400 font-medium leading-relaxed">
             Register your air-drawn signature as a biometric passkey, then verify your identity at any time using FastDTW pattern matching.
           </p>
+
+          {/* Dynamic Feed Display */}
+          {(currentMode === 3 || isProcessing) && (
+            <div className="mt-2 border-4 border-[#a855f7] bg-black p-1 shadow-[4px_4px_0_rgba(168,85,247,0.4)] relative w-full overflow-hidden">
+              <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                <span className="text-[10px] font-mono font-bold text-white uppercase tracking-wider bg-black/60 px-1 py-0.5">Live</span>
+              </div>
+              <img 
+                src={videoUrl}
+                alt="Live Signature Feed" 
+                className="w-full max-h-60 object-contain mx-auto" 
+              />
+            </div>
+          )}
 
           {/* Enrolled Users List */}
           <div className="mt-auto pt-4 border-t-2 border-white/20">

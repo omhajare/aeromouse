@@ -64,16 +64,20 @@ export function SystemControl({
       showToast('error', 'System must be running to switch modes');
       return;
     }
+
+    // Toggle logic: if clicking the active mode, switch to 0 (Standby)
+    const targetMode = mode === currentMode ? 0 : mode;
     setSwitchingMode(mode);
     try {
-      await setMode(mode);
-      onModeChange(mode);
+      await setMode(targetMode);
+      onModeChange(targetMode);
       const modeNames: Record<number, string> = {
+        0: 'Standby / Deactivated',
         1: 'Virtual Mouse',
         2: 'Facial Control',
         3: 'Air Signature',
       };
-      showToast('success', `Switched to ${modeNames[mode]}`);
+      showToast('success', targetMode === 0 ? 'Mode Deactivated' : `Switched to ${modeNames[targetMode]}`);
     } catch (err) {
       showToast('error', err instanceof Error ? err.message : 'Failed to switch mode');
     } finally {
@@ -117,13 +121,12 @@ export function SystemControl({
             <div className="flex flex-col gap-2">
               <span>STATUS</span>
               <div
-                className={`text-xs font-black uppercase px-3 py-1 border-2 ${
-                  systemStatus === 'running'
+                className={`text-xs font-black uppercase px-3 py-1 border-2 ${systemStatus === 'running'
                     ? 'border-green-400 text-green-400'
                     : systemStatus === 'starting'
-                    ? 'border-yellow-400 text-yellow-400'
-                    : 'border-gray-600 text-gray-600'
-                }`}
+                      ? 'border-yellow-400 text-yellow-400'
+                      : 'border-gray-600 text-gray-600'
+                  }`}
               >
                 {systemStatus.toUpperCase()}
               </div>
@@ -194,7 +197,7 @@ export function SystemControl({
             tags={['☝️ Move', '✌️ Click', '✊ Drag', '🖐️ Scroll']}
             isActive={isRunning && currentMode === 1}
             isLoading={switchingMode === 1}
-            disabled={!isRunning || switchingMode !== null}
+            disabled={!isRunning || (switchingMode !== null && switchingMode !== 1)}
             onClick={() => handleModeSwitch(1)}
           />
           <BrutalistCard
@@ -204,7 +207,7 @@ export function SystemControl({
             tags={['⬆️ Scroll Up', '⬇️ Scroll Down', '▶️ Play/Pause']}
             isActive={isRunning && currentMode === 2}
             isLoading={switchingMode === 2}
-            disabled={!isRunning || switchingMode !== null}
+            disabled={!isRunning || (switchingMode !== null && switchingMode !== 2)}
             onClick={() => handleModeSwitch(2)}
           />
           <BrutalistCard
@@ -214,7 +217,7 @@ export function SystemControl({
             tags={['✍️ Draw', '✊ Clear', '🤏 Save']}
             isActive={isRunning && currentMode === 3}
             isLoading={switchingMode === 3}
-            disabled={!isRunning || switchingMode !== null}
+            disabled={!isRunning || (switchingMode !== null && switchingMode !== 3)}
             onClick={() => handleModeSwitch(3)}
           />
         </div>
