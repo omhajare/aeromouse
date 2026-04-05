@@ -22,6 +22,11 @@ class AeroMouseController:
         self.start_failed = False  # Set True if camera cannot open
         self.signature_points = []  # For air signature feature
         
+        # Frame buffering for web stream
+        self.latest_frame = None
+        self.frame_lock = threading.Lock()
+        self.enable_native_ui = False  # Set True if running without Flask
+        
         # Initialize MediaPipe
         self.mp_hands = mp.solutions.hands
         self.mp_face_mesh = mp.solutions.face_mesh
@@ -99,8 +104,21 @@ class AeroMouseController:
                     frame, hand_results, self.signature_points, w, h
                 )
             
-            # Display frame
-            cv2.imshow('AERO MOUSE - Touchless HCI System', frame)
+            # Store latest frame for Flask stream
+            with self.frame_lock:
+                self.latest_frame = frame.copy()
+            
+            # Display frame natively if enabled OR if we are NOT in Air Signature mode (3)
+            show_native = self.enable_native_ui or (self.current_mode != 3)
+            
+            if show_native:
+                cv2.imshow('AERO MOUSE - Touchless HCI System', frame)
+            else:
+                try:
+                    if cv2.getWindowProperty('AERO MOUSE - Touchless HCI System', cv2.WND_PROP_VISIBLE) > 0:
+                        cv2.destroyWindow('AERO MOUSE - Touchless HCI System')
+                except cv2.error:
+                    pass
             
             # Handle key presses
             key = cv2.waitKey(1) & 0xFF
@@ -181,4 +199,5 @@ def get_controller():
 if __name__ == "__main__":
     # Run directly without Flask
     controller = AeroMouseController()
+    controller.enable_native_ui = True
     controller.start()

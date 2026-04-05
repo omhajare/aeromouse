@@ -12,6 +12,7 @@ import { Hero } from './components/layout/Hero';
 import { DashboardHeader } from './components/dashboard/DashboardHeader';
 import { SystemControl } from './components/dashboard/SystemControl';
 import { SavedSignatures } from './components/dashboard/SavedSignatures';
+import { OfflineBanner } from './components/ui/OfflineBanner';
 import { getStatus } from './api';
 import type { SystemStatus } from './api';
 
@@ -52,6 +53,9 @@ export default function App() {
 
   return (
     <div className="w-full min-h-screen font-sans text-white bg-[#03000a]">
+      {/* OFFLINE / DEGRADED SERVICE BANNER */}
+      <OfflineBanner />
+
       {/* FIXED 3D BACKGROUND */}
       <div className="fixed inset-0 z-0">
         <Canvas camera={{ position: [0, 0, 15], fov: 45 }}>
@@ -115,7 +119,7 @@ export default function App() {
               />
             )}
 
-            {activeTab === 'signature_auth' && <SignatureAuth />}
+            {activeTab === 'signature_auth' && <SignatureAuth currentMode={currentMode} />}
 
             {activeTab === 'saved_signatures' && <SavedSignatures />}
 

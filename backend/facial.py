@@ -12,6 +12,20 @@ import cv2
 import numpy as np
 import pyautogui
 import time
+import sys
+import ctypes
+
+def _scroll_foreground(amount):
+    """Send WM_MOUSEWHEEL to the foreground window (works regardless of mouse position)."""
+    if sys.platform == 'win32':
+        WM_MOUSEWHEEL = 0x020A
+        hwnd = ctypes.windll.user32.GetForegroundWindow()
+        # WPARAM high word = wheel delta, low word = virtual key flags (0)
+        wheel_delta = int(amount) * 120  # 120 = one notch
+        wparam = (wheel_delta & 0xFFFF) << 16  # Pack delta into high word
+        ctypes.windll.user32.SendMessageW(hwnd, WM_MOUSEWHEEL, wparam, 0)
+    else:
+        pyautogui.scroll(amount)
 
 class FacialController:
     """Facial gesture based control system with slide lock feature"""
@@ -22,8 +36,8 @@ class FacialController:
         self.history_size = 5  # Track last 5 positions for smoothing
         
         # IMPROVED THRESHOLDS - Reduced for easier triggering
-        self.vertical_threshold = 15  # Reduced from 25 (easier vertical movement)
-        self.horizontal_threshold = 18  # Reduced from 30 (easier horizontal movement)
+        self.vertical_threshold = 10  # Reduced from 15 (easier vertical movement)
+        self.horizontal_threshold = 12  # Reduced from 18 (easier horizontal movement)
         
         # Cooldown timers - Optimized for responsiveness
         self.action_cooldown = 0.6  # Reduced from 1.0 for faster response
@@ -308,11 +322,12 @@ class FacialController:
         
         # ========== VERTICAL SCROLLING (always works) ==========    
         elif gesture == "HEAD_UP":
-            pyautogui.scroll(3)
+            # Send scroll to focused window (not just window under cursor)
+            _scroll_foreground(5)
             action_performed = True
             
         elif gesture == "HEAD_DOWN":
-            pyautogui.scroll(-3)
+            _scroll_foreground(-5)
             action_performed = True
         
         # Update state if action performed

@@ -49,7 +49,7 @@ class SignatureAuthenticator:
                         self.dtw_threshold = float(row[0])
                         self.feature_threshold = float(row[1])
                         self.min_signature_points = int(row[2])
-        except Exception as e:
+        except (ConnectionError, Exception) as e:
             print(f"[Auth] Could not load thresholds from DB, using defaults: {e}")
 
     def _generate_user_id(self, username):
@@ -199,6 +199,12 @@ class SignatureAuthenticator:
                             'message': f'User "{username}" already exists. Use a different username or delete the existing profile.',
                             'user_id': None
                         }
+        except ConnectionError:
+            return {
+                'success': False,
+                'message': 'Database is offline. Enrollment requires an internet connection.',
+                'user_id': None
+            }
         except Exception as e:
             return {
                 'success': False,
@@ -265,6 +271,13 @@ class SignatureAuthenticator:
                     row = cur.fetchone()
                     if row:
                         enrolled_features = row[0] if isinstance(row[0], dict) else json.loads(row[0])
+        except ConnectionError:
+            return {
+                'authenticated': False,
+                'confidence': 0.0,
+                'message': 'Database is offline. Verification requires an internet connection.',
+                'details': None
+            }
         except Exception as e:
             return {
                 'authenticated': False,
@@ -373,6 +386,11 @@ class SignatureAuthenticator:
                             'success': False,
                             'message': f'User "{username}" not found.'
                         }
+        except ConnectionError:
+            return {
+                'success': False,
+                'message': 'Database is offline. Cannot delete user without internet.'
+            }
         except Exception as e:
             return {
                 'success': False,
@@ -400,6 +418,9 @@ class SignatureAuthenticator:
                         }
                         for row in rows
                     ]
+        except ConnectionError:
+            print("[Auth] Database offline — cannot list users")
+            return []
         except Exception as e:
             print(f"[Auth] Failed to list users: {e}")
             return []
@@ -440,6 +461,8 @@ class SignatureAuthenticator:
                         """,
                         (self.dtw_threshold, self.feature_threshold)
                     )
+        except ConnectionError:
+            print("[Auth] Database offline — thresholds saved in-memory only")
         except Exception as e:
             print(f"[Auth] Failed to save thresholds: {e}")
 

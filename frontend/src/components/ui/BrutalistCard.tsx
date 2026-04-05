@@ -60,22 +60,26 @@ export function BrutalistCard({
           {isActive ? 'ACTIVE' : 'INACTIVE'}
         </div>
 
-        {!isActive && (
-          <button
-            onClick={onClick}
-            disabled={disabled || isLoading}
-            className="block w-full px-4 py-3 text-center text-sm font-bold uppercase border-[3px] border-white bg-black text-white relative transition-all duration-200 shadow-[4px_4px_0_#fff] hover:-translate-y-[2px] hover:-translate-x-[2px] hover:shadow-[6px_6px_0_#fff] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none hover:bg-[#a855f7] hover:text-white hover:border-[#a855f7] disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
-          >
-            {isLoading ? (
-              <span className="flex items-center justify-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Activating...
-              </span>
-            ) : (
-              'Activate'
-            )}
-          </button>
-        )}
+        <button
+          onClick={onClick}
+          disabled={disabled || isLoading}
+          className={`block w-full px-4 py-3 text-center text-sm font-bold uppercase border-[3px] border-white relative transition-all duration-200 shadow-[4px_4px_0_#fff] hover:-translate-y-[2px] hover:-translate-x-[2px] hover:shadow-[6px_6px_0_#fff] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none ${
+            isActive
+              ? 'bg-red-600 text-white hover:bg-red-500 hover:border-red-500'
+              : 'bg-black text-white hover:bg-[#a855f7] hover:border-[#a855f7]'
+          }`}
+        >
+          {isLoading ? (
+            <span className="flex items-center justify-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {isActive ? 'Deactivating...' : 'Activating...'}
+            </span>
+          ) : isActive ? (
+            'Deactivate'
+          ) : (
+            'Activate'
+          )}
+        </button>
       </div>
     </div>
   );
