@@ -1,0 +1,30 @@
+# Core Computer Vision and MediaPipe
+opencv-python==4.8.1.78
+mediapipe==0.10.8
+
+# Flask Web Framework
+Flask==3.0.0
+flask-cors==4.0.0
+
+# Scientific Computing
+numpy==1.24.3
+scipy==1.11.4
+
+# Authentication - Dynamic Time Warping
+fastdtw==0.3.4
+
+# Mouse and Keyboard Control (for virtual mouse module)
+pyautogui==0.9.54
+pynput==1.7.6
+
+# Additional utilities
+Pillow==10.1.0
+
+# Environment Configuration
+python-dotenv==1.0.0
+
+# PostgreSQL Database
+psycopg2-binary==2.9.9
+
+# Cloudinary Image Storage
+cloudinary==1.36.0

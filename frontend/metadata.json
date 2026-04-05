@@ -1,0 +1,5 @@
+{
+  "name": "3D Orbits Systems",
+  "description": "An immersive, cursor-responsive 3D galaxy with orbiting stars built with React Three Fiber.",
+  "requestFramePermissions": []
+}
