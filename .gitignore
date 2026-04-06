@@ -52,8 +52,6 @@ data/signature_profiles/*
 !data/signatures/.gitkeep
 !data/signature_profiles/.gitkeep
 
-# Deployment / web export artifacts
-web/
 
 # Typo / malformed file extensions
 *.tsx.tsx
