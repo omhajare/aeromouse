@@ -23,8 +23,7 @@ Pillow==10.1.0
 # Environment Configuration
 python-dotenv==1.0.0
 
-# PostgreSQL Database
-psycopg2-binary==2.9.9
+# Database: SQLite (built-in, no package needed)
 
 # Cloudinary Image Storage
 cloudinary==1.36.0

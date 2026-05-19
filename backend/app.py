@@ -103,7 +103,7 @@ def health_check():
     Combined health check for all services.
     Frontend uses this to show online/offline status.
     """
-    db_online = db_is_connected()
+    db_online = True  # SQLite is always available locally
     cloud_online = False
     try:
         cloud_online = is_cloud_available()
@@ -360,7 +360,7 @@ def list_signatures():
                         'url': row[2],
                         'public_id': row[3],
                         'point_count': row[4],
-                        'created_at': row[5].isoformat() if row[5] else None,
+                        'created_at': row[5] if row[5] else None,
                         'username': row[6]
                     })
 

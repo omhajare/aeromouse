@@ -49,6 +49,7 @@ Thumbs.db
 # Runtime Data (auto-generated)
 data/signatures/*
 data/signature_profiles/*
+data/*.db
 !data/signatures/.gitkeep
 !data/signature_profiles/.gitkeep
 

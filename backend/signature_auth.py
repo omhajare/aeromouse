@@ -6,15 +6,10 @@ Features: Dynamic Time Warping, Feature Extraction, PostgreSQL Storage
 
 import numpy as np
 import json
-import os
 from datetime import datetime
 from scipy.spatial.distance import euclidean
 from fastdtw import fastdtw
 import hashlib
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
 from db import get_connection
 
@@ -192,7 +187,7 @@ class SignatureAuthenticator:
         try:
             with get_connection() as conn:
                 with conn.cursor() as cur:
-                    cur.execute("SELECT id FROM users WHERE username = %s", (username,))
+                    cur.execute("SELECT id FROM users WHERE username = ?", (username,))
                     if cur.fetchone():
                         return {
                             'success': False,
@@ -232,9 +227,9 @@ class SignatureAuthenticator:
                     cur.execute(
                         """
                         INSERT INTO users (username, user_id, features, enrolled_date)
-                        VALUES (%s, %s, %s, %s)
+                        VALUES (?, ?, ?, ?)
                         """,
-                        (username, user_id, json.dumps(features), datetime.now())
+                        (username, user_id, json.dumps(features), datetime.now().isoformat())
                     )
 
             return {
@@ -267,10 +262,10 @@ class SignatureAuthenticator:
         try:
             with get_connection() as conn:
                 with conn.cursor() as cur:
-                    cur.execute("SELECT features FROM users WHERE username = %s", (username,))
+                    cur.execute("SELECT features FROM users WHERE username = ?", (username,))
                     row = cur.fetchone()
                     if row:
-                        enrolled_features = row[0] if isinstance(row[0], dict) else json.loads(row[0])
+                        enrolled_features = json.loads(row[0]) if isinstance(row[0], str) else row[0]
         except ConnectionError:
             return {
                 'authenticated': False,
@@ -373,10 +368,9 @@ class SignatureAuthenticator:
         try:
             with get_connection() as conn:
                 with conn.cursor() as cur:
-                    cur.execute("DELETE FROM users WHERE username = %s RETURNING id", (username,))
-                    deleted = cur.fetchone()
+                    cur.execute("DELETE FROM users WHERE username = ?", (username,))
 
-                    if deleted:
+                    if cur.rowcount > 0:
                         return {
                             'success': True,
                             'message': f'User "{username}" deleted successfully.'
@@ -414,7 +408,7 @@ class SignatureAuthenticator:
                         {
                             'username': row[0],
                             'user_id': row[1],
-                            'enrolled_date': row[2].strftime("%Y-%m-%d %H:%M:%S") if row[2] else None
+                            'enrolled_date': row[2] if row[2] else None
                         }
                         for row in rows
                     ]
@@ -456,7 +450,7 @@ class SignatureAuthenticator:
                     cur.execute(
                         """
                         UPDATE auth_thresholds
-                        SET dtw_threshold = %s, feature_threshold = %s, updated_at = NOW()
+                        SET dtw_threshold = ?, feature_threshold = ?, updated_at = datetime('now')
                         WHERE id = 1
                         """,
                         (self.dtw_threshold, self.feature_threshold)
