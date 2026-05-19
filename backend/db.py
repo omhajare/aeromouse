@@ -1,70 +1,74 @@
 """
 Database Connection Module
-Provides PostgreSQL connection pooling for the application.
-Reads DATABASE_URL from environment variables.
-Gracefully handles offline/unavailable database scenarios.
+Provides SQLite connection management for the application.
+Local, zero-configuration database — no network dependency.
 """
 
 import os
-import psycopg2
-from psycopg2 import pool
+import sys
+import sqlite3
 from contextlib import contextmanager
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
-
-DATABASE_URL = os.environ.get('DATABASE_URL')
-
-# Connection pool (min 1, max 10 connections)
-_connection_pool = None
-_db_available = None  # None = unknown, True = connected, False = unreachable
 
 
-def _get_pool():
-    """Get or create the connection pool (lazy initialization)."""
-    global _connection_pool, _db_available
+# ── Determine database file path ────────────────────────────────────────────
+if getattr(sys, 'frozen', False):
+    # PyInstaller: store DB next to the executable (persistent & writable)
+    _DB_DIR = os.path.join(os.path.dirname(sys.executable), 'data')
+else:
+    # Development: store in project_root/data/
+    _DB_DIR = os.path.normpath(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
+    )
 
-    if not DATABASE_URL:
-        _db_available = False
-        return None
+os.makedirs(_DB_DIR, exist_ok=True)
+DB_PATH = os.path.join(_DB_DIR, 'aeromouse.db')
 
-    if _connection_pool is None:
-        try:
-            _connection_pool = pool.SimpleConnectionPool(
-                minconn=1,
-                maxconn=10,
-                dsn=DATABASE_URL
-            )
-            _db_available = True
-        except psycopg2.OperationalError as e:
-            print(
-                f"[DB] Could not connect to PostgreSQL database. "
-                f"Cloud features will be unavailable. Error: {e}"
-            )
-            _db_available = False
-            return None
-    return _connection_pool
 
+# ── Wrappers to keep the same `with conn.cursor() as cur:` interface ────────
+
+class _CursorWrapper:
+    """Wraps sqlite3.Cursor to support `with conn.cursor() as cur:` syntax."""
+
+    def __init__(self, cursor):
+        self._cur = cursor
+
+    def __enter__(self):
+        return self._cur
+
+    def __exit__(self, *args):
+        self._cur.close()
+
+
+class _ConnectionWrapper:
+    """Wraps sqlite3.Connection so .cursor() returns a context-manager cursor."""
+
+    def __init__(self, conn):
+        self._conn = conn
+
+    def cursor(self):
+        return _CursorWrapper(self._conn.cursor())
+
+    def commit(self):
+        self._conn.commit()
+
+    def rollback(self):
+        self._conn.rollback()
+
+    def close(self):
+        self._conn.close()
+
+
+# ── Public API (same interface as the old PostgreSQL module) ────────────────
 
 def is_connected():
-    """Check if the database is reachable. Returns True/False."""
-    global _db_available
-    if _db_available is not None:
-        return _db_available
-
-    p = _get_pool()
-    return p is not None
+    """SQLite is always available locally — returns True."""
+    return True
 
 
 @contextmanager
 def get_connection():
     """
     Context manager for database connections.
-    Automatically returns connection to pool after use.
-
-    Raises ConnectionError if database is unavailable so callers
-    can show a meaningful offline message.
 
     Usage:
         with get_connection() as conn:
@@ -72,51 +76,25 @@ def get_connection():
                 cur.execute("SELECT * FROM users")
                 rows = cur.fetchall()
     """
-    p = _get_pool()
-    if p is None:
-        raise ConnectionError(
-            "Database is unavailable. Check your DATABASE_URL or internet connection."
-        )
-
-    conn = None
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA foreign_keys=ON")
+    wrapper = _ConnectionWrapper(conn)
     try:
-        conn = p.getconn()
-        yield conn
+        yield wrapper
         conn.commit()
-    except psycopg2.OperationalError as e:
-        global _db_available, _connection_pool
-        _db_available = False
-        _connection_pool = None  # Force re-init on next attempt
-        if conn:
-            conn.rollback()
-        raise ConnectionError(f"Database connection lost: {e}")
     except Exception:
-        if conn:
-            conn.rollback()
+        conn.rollback()
         raise
     finally:
-        if conn and _connection_pool:
-            try:
-                _connection_pool.putconn(conn)
-            except Exception:
-                pass
+        conn.close()
 
 
 def reset_pool():
-    """Reset the connection pool to force re-connection on next use."""
-    global _connection_pool, _db_available
-    if _connection_pool:
-        try:
-            _connection_pool.closeall()
-        except Exception:
-            pass
-    _connection_pool = None
-    _db_available = None
+    """No-op for SQLite (no connection pool)."""
+    pass
 
 
 def close_pool():
-    """Close all connections in the pool. Call on app shutdown."""
-    global _connection_pool
-    if _connection_pool:
-        _connection_pool.closeall()
-        _connection_pool = None
+    """No-op for SQLite (no connection pool)."""
+    pass

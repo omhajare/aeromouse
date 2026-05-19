@@ -230,7 +230,7 @@ class AirSignature:
                     cur.execute(
                         """
                         INSERT INTO signatures (filename, cloudinary_public_id, cloudinary_url, point_count)
-                        VALUES (%s, %s, %s, %s)
+                        VALUES (?, ?, ?, ?)
                         """,
                         (filename, result['public_id'], result['secure_url'], point_count)
                     )

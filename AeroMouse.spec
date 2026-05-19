@@ -68,11 +68,7 @@ a = Analysis(
         'pynput.keyboard',
         'pynput.mouse._win32',
         'pynput.keyboard._win32',
-        # Database
-        'psycopg2',
-        'psycopg2._psycopg',
-        'psycopg2.extensions',
-        'psycopg2.pool',
+        # Database (SQLite — built-in, no hidden imports needed)
         # Cloudinary
         'cloudinary',
         'cloudinary.uploader',
